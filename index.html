@@ -66,8 +66,10 @@
 		var denoiser = new Denoiser(renderer);
 
 		function denoise(){
-			denoiser.setInput(texture);
-			denoiser.denoise();
+			// denoiser.setInput();
+			var tex = denoiser.denoise(texture);
+			viewMaterial.uniforms.buffer.value = tex;
+			render();
 		}
 
     </script>

@@ -1,4 +1,4 @@
-var Denioser = function(renderer){
+var Denoiser = function(renderer){
 	this.renderer = renderer;
 
 	this.viewScene = new THREE.Scene();
@@ -18,14 +18,14 @@ var Denioser = function(renderer){
 	this.viewQuad = new THREE.Mesh(quad, viewMaterial);
 	this.viewScene.add(this.viewQuad);
 
-	this.radius = 6;
+	this.radius = 12;
 	this.strength = 1;
 	this.frame = 0;
 
 };
 
 
-Denioser.prototype = {
+Denoiser.prototype = {
 	init : function(){
 		this.writeBuffer =  new THREE.WebGLRenderTarget( this.width, this.height, {
 			wrapS: THREE.ClampToEdgeWrapping,
@@ -47,8 +47,8 @@ Denioser.prototype = {
 
 		this.viewQuad.material = new THREE.ShaderMaterial({
 			uniforms : {
-				noiseBuffer : {value : input.texture},
-				readBuffer : {value : this.readBuffer.texture},
+				noiseBuffer : {value : this.input},
+				readBuffer : {value : null},
 				frame : { value : this.frame },
 				r : { value : null },
 				c : { value : null },
@@ -60,7 +60,6 @@ Denioser.prototype = {
 		});
 	
 	},
-
 	swapBuffer : function(){
 		var temp = this.writeBuffer;
 		this.writeBuffer = this.readBuffer;
@@ -72,21 +71,28 @@ Denioser.prototype = {
 			this.input = input.texture;
 			this.width = input.width;
 			this.height = input.height;
+		}else if(input instanceof THREE.Texture){
+			this.input = input;
+			this.width = input.image.width;
+			this.height = input.image.height;
 		}
 		this.init();
 
-		for(var i = -this.radius; i < this.radius; i++){
-			for(var n = - this.radius; n < this.radius; n++){
-
+		for(var i = -this.radius; i <= this.radius; i++){
+			for(var n = - this.radius; n <= this.radius; n++){
+				if(n == 0 && i == 0)continue;
 				this.viewQuad.material.uniforms.readBuffer.value = this.frame == 0 ? this.texture :this.readBuffer.texture;
 				this.viewQuad.material.uniforms.frame.value = this.frame;
-				this.viewQuad.material.uniforms.r.value = i;
-				this.viewQuad.material.uniforms.c.value = n;
+				this.viewQuad.material.uniforms.r.value = n;
+				this.viewQuad.material.uniforms.c.value = i;
+				
 				this.renderer.render(this.viewScene, this.viewCamera, this.writeBuffer);
 				this.frame++;
 				this.swapBuffer();
 			}
 		}
+
+		return this.readBuffer.texture;
 	},
 
 };
